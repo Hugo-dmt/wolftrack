@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="112" fill="#0D0F12"/>
+  <!-- Outer geometric wolf silhouette -->
+  <polygon points="116,92 184,186 256,162 328,186 396,92 412,248 364,344 256,436 148,344 100,248" fill="#161A20" stroke="#38BDF8" stroke-width="14" stroke-linejoin="round"/>
+  <!-- Inner brow & snout facets -->
+  <polyline points="184,186 220,276 256,240 292,276 328,186" stroke="#38BDF8" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="100,248 188,284 256,436 324,284 412,248" stroke="#262C36" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Eyes -->
+  <polygon points="168,238 206,252 184,268" fill="#38BDF8"/>
+  <polygon points="344,238 306,252 328,268" fill="#38BDF8"/>
+  <!-- Nose -->
+  <polygon points="234,356 278,356 256,386" fill="#38BDF8"/>
+</svg>
