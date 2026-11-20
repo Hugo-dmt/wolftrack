@@ -54,10 +54,11 @@ export function createMetricControl(metric, { onChange, onInstantSelect }) {
 
       wrapper.appendChild(list);
     } else if (metric.type === 'scale') {
+      const maxScale = metric.maxScale || 4;
       const grid = document.createElement('div');
-      grid.className = 'scale-grid';
+      grid.className = `scale-grid ${maxScale === 5 ? 'scale-grid-5' : ''}`;
 
-      [1, 2, 3, 4].forEach((num) => {
+      for (let num = 1; num <= maxScale; num++) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = `scale-btn ${state.value === num ? 'is-selected' : ''}`;
@@ -68,11 +69,11 @@ export function createMetricControl(metric, { onChange, onInstantSelect }) {
           emit(true);
         });
         grid.appendChild(btn);
-      });
+      }
 
       const hints = document.createElement('div');
       hints.className = 'scale-hints';
-      hints.innerHTML = `<span>1 · ${metric.minLabel}</span><span>4 · ${metric.maxLabel}</span>`;
+      hints.innerHTML = `<span>1 · ${metric.minLabel}</span><span>${maxScale} · ${metric.maxLabel}</span>`;
 
       wrapper.appendChild(grid);
       wrapper.appendChild(hints);

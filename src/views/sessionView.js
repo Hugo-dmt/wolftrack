@@ -128,8 +128,8 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       </div>
 
       <div class="session-thumb-actions">
-        <button type="button" class="btn-secondary btn-xl" id="sess-skip-btn">Passer</button>
-        <button type="button" class="btn-primary btn-xl" id="sess-next-btn" disabled>Suivant</button>
+        <button type="button" class="btn-skip btn-xl" id="sess-skip-btn">Passer</button>
+        <button type="button" class="btn-next-green btn-xl" id="sess-next-btn" disabled>Suivant</button>
       </div>
     `;
 
@@ -152,9 +152,6 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
         currentValue = val;
         currentValid = true;
         nextBtn.disabled = false;
-        if (metric.autoAdvance) {
-          setTimeout(() => saveAndAdvance(metric, val), 150);
-        }
       },
     });
 

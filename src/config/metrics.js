@@ -6,6 +6,18 @@
 export const METRICS = [
   // --- SYMPTÔMES ---
   {
+    id: 'etat_general',
+    category: 'symptomes',
+    label: 'État général',
+    question: 'État général ?',
+    type: 'scale',
+    maxScale: 5,
+    minLabel: 'Très mauvais',
+    maxLabel: 'Au top',
+    hasNope: false,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`,
+  },
+  {
     id: 'fourmillements',
     category: 'symptomes',
     label: 'Fourmillements',
@@ -39,7 +51,7 @@ export const METRICS = [
     type: 'scale',
     minLabel: 'Légères',
     maxLabel: 'Intenses',
-    hasNope: false,
+    hasNope: true,
     autoAdvance: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>`,
   },

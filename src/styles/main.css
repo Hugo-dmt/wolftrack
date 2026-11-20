@@ -452,18 +452,43 @@ button:disabled {
 .btn-nope-inline {
   width: 100%;
   min-height: 50px;
+  margin-top: 14px;
   border-radius: var(--radius-md);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #FCA5A5;
   font-size: 1rem;
   font-weight: 700;
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .btn-nope-inline:active {
-  background: var(--surface-hover);
-  color: var(--text);
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.btn-skip,
+.btn-next-green {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 58px;
+  padding: 0 20px;
+  border-radius: var(--radius-md);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  transition: transform 0.1s, background-color 0.15s, opacity 0.15s;
+}
+
+.btn-skip {
+  background: #262C36;
+  border: 1px solid #374151;
+  color: #D1D5DB;
+}
+
+.btn-next-green {
+  background: #10B981;
+  color: #052E16;
 }
 
 .session-start-card,
@@ -576,6 +601,11 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+}
+
+.scale-grid.scale-grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
 }
 
 .scale-btn {
