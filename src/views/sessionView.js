@@ -40,7 +40,7 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       el.className = 'session-stage';
       el.innerHTML = `
         <div class="session-start-card">
-          <div class="session-badge">Session Express · 11 questions</div>
+          <div class="session-badge">Session Express · ${METRICS.length} questions</div>
           <h2 class="session-start-title">Date de la session</h2>
           <div class="date-quick-row">
             <button type="button" class="seg-btn ${targetDate === today ? 'is-selected' : ''}" id="sess-today">
@@ -100,7 +100,7 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       return;
     }
 
-    // ÉCRANS 1 à 11
+    // ÉCRANS 1 à 12
     const metric = METRICS[step];
     const progressPct = ((step + 1) / METRICS.length) * 100;
 
@@ -120,16 +120,22 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       <div class="session-question-body">
         <h2 class="question-title">${metric.question}</h2>
         <div id="metric-control-slot"></div>
+        ${
+          metric.hasNope
+            ? `<button type="button" class="btn-nope-inline" id="sess-nope-btn">Nope</button>`
+            : ''
+        }
       </div>
 
       <div class="session-thumb-actions">
-        <button type="button" class="btn-secondary btn-xl" id="sess-nope-btn">Nope</button>
+        <button type="button" class="btn-secondary btn-xl" id="sess-skip-btn">Passer</button>
         <button type="button" class="btn-primary btn-xl" id="sess-next-btn" disabled>Suivant</button>
       </div>
     `;
 
     const slot = el.querySelector('#metric-control-slot');
     const nextBtn = el.querySelector('#sess-next-btn');
+    const skipBtn = el.querySelector('#sess-skip-btn');
     const nopeBtn = el.querySelector('#sess-nope-btn');
     const backBtn = el.querySelector('#sess-back-btn');
 
@@ -159,8 +165,14 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       render();
     });
 
-    nopeBtn.addEventListener('click', () => {
-      saveAndAdvance(metric, metric.nopeValue);
+    if (nopeBtn) {
+      nopeBtn.addEventListener('click', () => {
+        saveAndAdvance(metric, 0);
+      });
+    }
+
+    skipBtn.addEventListener('click', () => {
+      saveAndAdvance(metric, null);
     });
 
     nextBtn.addEventListener('click', () => {

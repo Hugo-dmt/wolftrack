@@ -1,6 +1,6 @@
 /**
- * Configuration centralisée des 11 métriques Wolftrack.
- * Ordre exact utilisé pour la Session Express (1 à 11) et la grille Saisie Rapide.
+ * Configuration centralisée des 12 métriques Wolftrack.
+ * Ordre exact utilisé pour la Session Express (1 à 12) et la grille Saisie Rapide.
  */
 
 export const METRICS = [
@@ -11,7 +11,7 @@ export const METRICS = [
     label: 'Fourmillements',
     question: 'Fourmillements ?',
     type: 'multi_fourmillements',
-    nopeValue: [],
+    hasNope: false,
     options: [
       { value: 'superieurs', label: 'Membres supérieurs' },
       { value: 'inferieurs', label: 'Membres inférieurs' },
@@ -27,7 +27,7 @@ export const METRICS = [
     type: 'scale',
     minLabel: 'En forme',
     maxLabel: 'Épuisé',
-    nopeValue: null,
+    hasNope: false,
     autoAdvance: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/><line x1="6" y1="11" x2="6" y2="13"/></svg>`,
   },
@@ -39,7 +39,7 @@ export const METRICS = [
     type: 'scale',
     minLabel: 'Légères',
     maxLabel: 'Intenses',
-    nopeValue: null,
+    hasNope: false,
     autoAdvance: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>`,
   },
@@ -51,7 +51,7 @@ export const METRICS = [
     label: 'Travail',
     question: 'Mode de travail ?',
     type: 'single',
-    nopeValue: null,
+    hasNope: false,
     autoAdvance: true,
     options: [
       { value: 'presentiel', label: 'Présentiel' },
@@ -66,7 +66,7 @@ export const METRICS = [
     label: 'Foot',
     question: 'Foot ?',
     type: 'foot',
-    nopeValue: null,
+    hasNope: true,
     types: [
       { value: 'match', label: 'Match' },
       { value: 'entrainement', label: 'Entraînement' },
@@ -79,7 +79,7 @@ export const METRICS = [
     label: 'Course',
     question: 'Course à pied ?',
     type: 'double_scale',
-    nopeValue: null,
+    hasNope: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"/><path d="M6 17l3-4 4 2 3-5"/><path d="M10 10l4-2 3 3"/><path d="M4 21h4l3-4"/></svg>`,
   },
   {
@@ -88,7 +88,7 @@ export const METRICS = [
     label: 'Marcus',
     question: 'Promenade de Marcus ?',
     type: 'double_scale',
-    nopeValue: null,
+    hasNope: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="1.5"/><circle cx="17" cy="8" r="1.5"/><circle cx="10" cy="5" r="1.5"/><circle cx="14" cy="5" r="1.5"/><path d="M8 14c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5c0 2.5-1.5 4.5-4 4.5S8 16.5 8 14z"/></svg>`,
   },
   {
@@ -99,7 +99,7 @@ export const METRICS = [
     type: 'scale',
     minLabel: 'Léger',
     maxLabel: 'Élevé',
-    nopeValue: 0,
+    hasNope: true,
     autoAdvance: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M12 11v11"/><path d="M6 3h12l-1.5 6a4.5 4.5 0 0 1-9 0L6 3z"/></svg>`,
   },
@@ -111,7 +111,7 @@ export const METRICS = [
     type: 'scale',
     minLabel: 'Léger',
     maxLabel: 'Élevé',
-    nopeValue: 0,
+    hasNope: true,
     autoAdvance: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-4.3 0-7-2.7-7-7 0-3.3 2.7-6 6-6h8c2.2 0 4 1.8 4 4s-1.8 4-4 4H9"/><path d="M14 6V3"/><path d="M18 7l2-2"/></svg>`,
   },
@@ -123,18 +123,31 @@ export const METRICS = [
     type: 'scale',
     minLabel: 'Très sain',
     maxLabel: 'Junk food',
-    nopeValue: null,
+    hasNope: false,
     autoAdvance: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>`,
   },
   {
-    id: 'sommeil',
+    id: 'sommeil_nuit',
     category: 'habitudes',
-    label: 'Sommeil',
-    question: 'Sommeil ?',
-    type: 'sommeil',
-    nopeValue: null,
+    label: 'Nuit',
+    question: 'Sommeil (Nuit) ?',
+    type: 'hours',
+    defaultHours: 7.5,
+    presets: [5, 6, 7, 7.5, 8, 9],
+    hasNope: false,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+  },
+  {
+    id: 'sieste',
+    category: 'habitudes',
+    label: 'Sieste',
+    question: 'Sieste ?',
+    type: 'hours',
+    defaultHours: 1.0,
+    presets: [0.5, 1, 1.5, 2],
+    hasNope: true,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>`,
   },
 ];
 

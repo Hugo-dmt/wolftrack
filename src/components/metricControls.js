@@ -144,31 +144,7 @@ export function createMetricControl(metric, { onChange, onInstantSelect }) {
         render();
         emit(false);
       }));
-    } else if (metric.type === 'sommeil') {
-      // Type: Nuit / Sieste
-      const typeRow = document.createElement('div');
-      typeRow.className = 'segmented-row';
-
-      [
-        { value: 'nuit', label: 'Nuit', defaultHours: 7.5 },
-        { value: 'sieste', label: 'Sieste', defaultHours: 1.0 },
-      ].forEach((t) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `seg-btn ${state.type === t.value ? 'is-selected' : ''}`;
-        btn.textContent = t.label;
-        btn.addEventListener('click', () => {
-          if (state.type !== t.value) {
-            state.type = t.value;
-            state.hours = t.defaultHours;
-            render();
-            emit(false);
-          }
-        });
-        typeRow.appendChild(btn);
-      });
-      wrapper.appendChild(typeRow);
-
+    } else if (metric.type === 'hours') {
       // Stepper -0.5h / +0.5h
       const stepper = document.createElement('div');
       stepper.className = 'sleep-stepper';
@@ -203,7 +179,7 @@ export function createMetricControl(metric, { onChange, onInstantSelect }) {
       wrapper.appendChild(stepper);
 
       // Quick pills
-      const presets = state.type === 'nuit' ? [5, 6, 7, 7.5, 8, 9] : [0.5, 1, 1.5, 2];
+      const presets = metric.presets || [5, 6, 7, 7.5, 8, 9];
       const pills = document.createElement('div');
       pills.className = 'preset-pills';
       presets.forEach((h) => {
@@ -223,7 +199,7 @@ export function createMetricControl(metric, { onChange, onInstantSelect }) {
   }
 
   render();
-  // Émettre l'état initial (utile pour Sommeil qui a une valeur par défaut)
+  // Émettre l'état initial (utile pour Nuit / Sieste qui ont une valeur par défaut)
   setTimeout(() => emit(false), 0);
 
   return {
@@ -263,8 +239,8 @@ function getInitialState(metric) {
       return { type: null, intensity: null, duration: null };
     case 'double_scale':
       return { intensity: null, duration: null };
-    case 'sommeil':
-      return { type: 'nuit', hours: 7.5 };
+    case 'hours':
+      return { hours: metric.defaultHours || 7.5 };
     default:
       return {};
   }
@@ -296,10 +272,10 @@ function evaluateState(metric, state) {
         value: valid ? { intensity: state.intensity, duration: state.duration } : null,
       };
     }
-    case 'sommeil':
+    case 'hours':
       return {
-        valid: Boolean(state.type && state.hours > 0),
-        value: { type: state.type, hours: state.hours },
+        valid: Boolean(state.hours > 0),
+        value: state.hours,
       };
     default:
       return { valid: false, value: null };

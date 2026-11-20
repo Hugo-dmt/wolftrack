@@ -449,6 +449,23 @@ button:disabled {
   padding-top: 12px;
 }
 
+.btn-nope-inline {
+  width: 100%;
+  min-height: 50px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 700;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-nope-inline:active {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
 .session-start-card,
 .done-card {
   flex: 1;
