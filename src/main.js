@@ -18,8 +18,10 @@ import { renderOnboardingView } from './views/onboardingView.js';
 import { renderSessionView } from './views/sessionView.js';
 import { renderManualView } from './views/manualView.js';
 import { renderSettingsView } from './views/settingsView.js';
+import { startReminderScheduler } from './utils/notifications.js';
 
 initPWAInstallListener();
+startReminderScheduler();
 
 const appRoot = document.getElementById('app');
 

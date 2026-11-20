@@ -9,10 +9,19 @@ import {
   isFirebaseConfigured,
   saveRuntimeFirebaseConfig,
 } from '../services/firebase.js';
+import {
+  getReminderConfig,
+  saveReminderConfig,
+  requestNotificationPermission,
+  sendWolftrackNotification,
+  isNotificationSupported,
+} from '../utils/notifications.js';
 
 export function renderSettingsView(container, { user, subject, onClose, onLogout, onToast }) {
   const installed = isStandaloneInstalled();
   const fbConfigured = isFirebaseConfigured();
+  const reminder = getReminderConfig();
+  const notifSupported = isNotificationSupported();
 
   container.innerHTML = `
     <div class="settings-overlay">
@@ -36,6 +45,33 @@ export function renderSettingsView(container, { user, subject, onClose, onLogout
             Connecté en tant que : ${user.displayName || user.email || 'Utilisateur'}
             ${user.isLocal ? ' (Mode local)' : ' (Google / Cloud)'}
           </div>
+        </section>
+
+        <section class="settings-card">
+          <div class="settings-label">Planifier les sessions</div>
+          <div class="reminder-row">
+            <input type="time" id="reminder-time-input" class="text-input reminder-time-input" value="${reminder.time || '20:30'}" />
+            <button type="button" class="btn-primary reminder-save-btn" id="reminder-toggle-btn">
+              ${reminder.enabled ? 'Mettre à jour' : 'Activer'}
+            </button>
+          </div>
+          ${
+            reminder.enabled
+              ? `
+            <div class="reminder-actions-row">
+              <button type="button" class="btn-secondary" id="reminder-test-btn">Tester</button>
+              <button type="button" class="btn-ghost" id="reminder-disable-btn">Désactiver</button>
+            </div>
+          `
+              : ''
+          }
+          <p class="settings-hint">
+            ${
+              notifSupported
+                ? 'Rappel quotidien à l’heure choisie (nécessite que l’app/navigateur reste actif en arrière-plan ; pour du push 100 % app fermée, un serveur FCM est requis).'
+                : 'Notifications non supportées sur ce navigateur.'
+            }
+          </p>
         </section>
 
         <section class="settings-card">
@@ -83,6 +119,41 @@ export function renderSettingsView(container, { user, subject, onClose, onLogout
   `;
 
   container.querySelector('#settings-close-btn').addEventListener('click', onClose);
+
+  const reminderToggleBtn = container.querySelector('#reminder-toggle-btn');
+  const reminderTimeInput = container.querySelector('#reminder-time-input');
+  reminderToggleBtn.addEventListener('click', async () => {
+    const perm = await requestNotificationPermission();
+    if (perm === 'unsupported') {
+      onToast('Notifications non supportées sur ce navigateur', 'error');
+      return;
+    }
+    if (perm !== 'granted') {
+      onToast('Permission de notification refusée', 'error');
+      return;
+    }
+    const time = reminderTimeInput.value || '20:30';
+    saveReminderConfig({ enabled: true, time, lastNotifiedDate: null });
+    onToast(`Rappel activé à ${time} ✓`, 'success');
+    renderSettingsView(container, { user, subject, onClose, onLogout, onToast });
+  });
+
+  const testBtn = container.querySelector('#reminder-test-btn');
+  if (testBtn) {
+    testBtn.addEventListener('click', async () => {
+      const ok = await sendWolftrackNotification('Wolftrack', 'Test de rappel quotidien ✓');
+      if (!ok) onToast('Impossible d’envoyer la notification', 'error');
+    });
+  }
+
+  const disableBtn = container.querySelector('#reminder-disable-btn');
+  if (disableBtn) {
+    disableBtn.addEventListener('click', () => {
+      saveReminderConfig({ ...reminder, enabled: false });
+      onToast('Rappel désactivé', 'success');
+      renderSettingsView(container, { user, subject, onClose, onLogout, onToast });
+    });
+  }
 
   container.querySelector('#copy-code-btn').addEventListener('click', async () => {
     try {
