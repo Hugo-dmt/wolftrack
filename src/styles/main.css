@@ -595,7 +595,12 @@ button:disabled {
 }
 
 .cal-day.is-done {
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--text);
+}
+
+.cal-day.is-partial {
+  background: rgba(245, 158, 11, 0.14);
   color: var(--text);
 }
 
@@ -615,6 +620,10 @@ button:disabled {
   height: 6px;
   border-radius: 50%;
   background: var(--success);
+}
+
+.cal-day.is-partial .cal-dot {
+  background: #F59E0B;
 }
 
 .date-custom-btn {

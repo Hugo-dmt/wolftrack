@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wolftrack-v1';
+const CACHE_NAME = 'wolftrack-v2';
 const APP_SHELL = ['./', './index.html', './manifest.json', './wolf-icon.svg'];
 
 self.addEventListener('install', (event) => {

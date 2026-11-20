@@ -11,7 +11,12 @@ export function renderManualView(container, { user, subject, targetDate, onDateC
   getEntriesForDateByAuthor(user, subject.id, targetDate)
     .then((map) => {
       existingEntries = map;
-      Object.keys(map).forEach((m) => savedMetrics.add(m));
+      savedMetrics.clear();
+      Object.entries(map).forEach(([m, val]) => {
+        if (val !== null && val !== undefined) {
+          savedMetrics.add(m);
+        }
+      });
       render();
     })
     .catch(() => {});

@@ -359,23 +359,56 @@ export async function exportAllEntries(user, subject) {
 }
 
 /**
- * Retourne l'ensemble des dates (YYYY-MM-DD) ayant au moins une entrée enregistrée
+ * Retourne le statut de chaque date (YYYY-MM-DD) pour l'utilisateur courant :
+ * - 'complete' : toutes les métriques ont une réponse non-null
+ * - 'partial'  : au moins une entrée, mais des questions passées (null) ou manquantes
  */
-export async function getCompletedDates(user, subjectId) {
-  if (!subjectId) return new Set();
+export async function getDateStatuses(user, subjectId, totalMetricsCount) {
+  if (!subjectId || !user) return {};
+
+  const byDate = {};
+
+  function record(targetDate, metric, value) {
+    if (!targetDate || !metric) return;
+    if (!byDate[targetDate]) {
+      byDate[targetDate] = { answered: new Set(), hasNull: false };
+    }
+    if (value === null || value === undefined) {
+      byDate[targetDate].hasNull = true;
+      byDate[targetDate].answered.delete(metric);
+    } else {
+      byDate[targetDate].answered.add(metric);
+    }
+  }
 
   if (!useFirestore(user)) {
     const db = readLocalDb();
     const rawEntries = db.entries[subjectId] || [];
-    return new Set(rawEntries.map((e) => e.targetDate).filter(Boolean));
+    for (const e of rawEntries) {
+      if (e.authorUid === user.uid) {
+        record(e.targetDate, e.metric, e.value);
+      }
+    }
+  } else {
+    const db = getDb();
+    const q = query(
+      collection(db, 'subjects', subjectId, 'entries'),
+      where('authorUid', '==', user.uid)
+    );
+    const snap = await getDocs(q);
+    snap.forEach((d) => {
+      const data = d.data();
+      record(data?.targetDate, data?.metric, data?.value);
+    });
   }
 
-  const db = getDb();
-  const snap = await getDocs(collection(db, 'subjects', subjectId, 'entries'));
-  const dates = new Set();
-  snap.forEach((d) => {
-    const td = d.data()?.targetDate;
-    if (td) dates.add(td);
-  });
-  return dates;
+  const statuses = {};
+  for (const [date, info] of Object.entries(byDate)) {
+    if (info.answered.size >= totalMetricsCount && !info.hasNull) {
+      statuses[date] = 'complete';
+    } else if (info.answered.size > 0 || info.hasNull) {
+      statuses[date] = 'partial';
+    }
+  }
+  return statuses;
 }

@@ -1,13 +1,13 @@
 import { METRICS } from '../config/metrics.js';
 import { createMetricControl } from '../components/metricControls.js';
-import { addEntry, getCompletedDates, getEntriesForDateByAuthor } from '../services/store.js';
+import { addEntry, getDateStatuses, getEntriesForDateByAuthor } from '../services/store.js';
 import { formatDateLabel, getTodayISO, getYesterdayISO, toLocalISODate } from '../utils/date.js';
 
 export function renderSessionView(container, { user, subject, targetDate, onDateChange, onToast }) {
   // step: -1 = Écran 0 (Départ), 0..14 = Métriques, 15 = Écran final
   let step = -1;
   let isSaving = false;
-  let completedDates = new Set();
+  let dateStatuses = {};
   let existingEntries = {};
 
   // Mois affiché dans le calendrier (basé sur targetDate)
@@ -15,9 +15,9 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
   let calYear = initY;
   let calMonth = initM - 1; // 0-indexed
 
-  getCompletedDates(user, subject.id)
-    .then((dates) => {
-      completedDates = dates;
+  getDateStatuses(user, subject.id, METRICS.length)
+    .then((statuses) => {
+      dateStatuses = statuses;
       if (step === -1) render();
     })
     .catch(() => {});
@@ -28,6 +28,21 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       if (step >= 0 && step < METRICS.length) render();
     })
     .catch(() => {});
+
+  function recomputeCurrentDateStatus() {
+    let answeredCount = 0;
+    let hasNull = false;
+    for (const m of METRICS) {
+      const v = existingEntries[m.id];
+      if (v === null) hasNull = true;
+      else if (v !== undefined) answeredCount += 1;
+    }
+    if (answeredCount >= METRICS.length && !hasNull) {
+      dateStatuses[targetDate] = 'complete';
+    } else if (answeredCount > 0 || hasNull) {
+      dateStatuses[targetDate] = 'partial';
+    }
+  }
 
   async function saveAndAdvance(metric, value) {
     if (isSaving) return;
@@ -41,7 +56,7 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
         value,
       });
       existingEntries[metric.id] = value;
-      completedDates.add(targetDate);
+      recomputeCurrentDateStatus();
       step += 1;
       isSaving = false;
       render();
@@ -72,17 +87,17 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       const iso = toLocalISODate(new Date(calYear, calMonth, day));
       const isFuture = iso > today;
       const isSelected = iso === targetDate;
-      const isDone = completedDates.has(iso);
+      const status = dateStatuses[iso]; // 'complete' | 'partial' | undefined
 
       cells += `
         <button
           type="button"
-          class="cal-cell cal-day ${isSelected ? 'is-selected' : ''} ${isDone ? 'is-done' : ''}"
+          class="cal-cell cal-day ${isSelected ? 'is-selected' : ''} ${status === 'complete' ? 'is-done' : ''} ${status === 'partial' ? 'is-partial' : ''}"
           data-date="${iso}"
           ${isFuture ? 'disabled' : ''}
         >
           <span>${day}</span>
-          ${isDone ? '<span class="cal-dot" aria-hidden="true"></span>' : ''}
+          ${status ? '<span class="cal-dot" aria-hidden="true"></span>' : ''}
         </button>
       `;
     }
