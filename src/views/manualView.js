@@ -102,6 +102,11 @@ export function renderManualView(container, { user, subject, targetDate, onDateC
       </div>
       <div id="sheet-control-slot"></div>
       ${
+        metric.hasNope
+          ? `<button type="button" class="btn-nope-inline" id="sheet-nope-btn">Nope</button>`
+          : ''
+      }
+      ${
         isAutoSaveInstant
           ? ''
           : `<div class="sheet-footer">
@@ -114,6 +119,7 @@ export function renderManualView(container, { user, subject, targetDate, onDateC
 
     const slot = sheetContent.querySelector('#sheet-control-slot');
     const saveBtn = sheetContent.querySelector('#sheet-save-btn');
+    const nopeBtn = sheetContent.querySelector('#sheet-nope-btn');
     let currentVal = null;
     let currentValid = false;
 
@@ -134,6 +140,12 @@ export function renderManualView(container, { user, subject, targetDate, onDateC
       } catch (err) {
         onToast(err.message || 'Erreur de sauvegarde', 'error');
       }
+    }
+
+    if (nopeBtn) {
+      nopeBtn.addEventListener('click', () => {
+        commitSave(0);
+      });
     }
 
     const control = createMetricControl(metric, {
