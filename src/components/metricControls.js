@@ -3,7 +3,50 @@
  * Utilisé à la fois dans Mode A (Session Express) et Mode B (Bottom Sheet Manuel).
  */
 
-export function createMetricControl(metric, { onChange, onInstantSelect }) {
+const SYMPTOM_COLORS = [
+  { bg: 'rgba(56, 189, 248, 0.18)', border: '#38BDF8', text: '#BAE6FD' },
+  { bg: 'rgba(167, 139, 250, 0.18)', border: '#A78BFA', text: '#DDD6FE' },
+  { bg: 'rgba(244, 114, 182, 0.18)', border: '#F472B6', text: '#FBCFE8' },
+  { bg: 'rgba(251, 146, 60, 0.18)', border: '#FB923C', text: '#FED7AA' },
+  { bg: 'rgba(52, 211, 153, 0.18)', border: '#34D399', text: '#A7F3D0' },
+  { bg: 'rgba(250, 204, 21, 0.18)', border: '#FACC15', text: '#FEF08A' },
+  { bg: 'rgba(248, 113, 113, 0.18)', border: '#F87171', text: '#FECACA' },
+  { bg: 'rgba(45, 212, 191, 0.18)', border: '#2DD4BF', text: '#99F6E4' },
+];
+
+function randomSymptomColor() {
+  return SYMPTOM_COLORS[Math.floor(Math.random() * SYMPTOM_COLORS.length)];
+}
+
+function getRecentSymptomsKey(user) {
+  return `wolftrack_recent_symptoms_${user?.uid || 'local'}`;
+}
+
+function loadRecentSymptoms(user) {
+  try {
+    const raw = localStorage.getItem(getRecentSymptomsKey(user));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.slice(0, 8) : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushRecentSymptom(user, label) {
+  const clean = label.trim();
+  if (!clean) return;
+  const existing = loadRecentSymptoms(user).filter(
+    (item) => item.toLowerCase() !== clean.toLowerCase()
+  );
+  const updated = [clean, ...existing].slice(0, 8);
+  try {
+    localStorage.setItem(getRecentSymptomsKey(user), JSON.stringify(updated));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+export function createMetricControl(metric, { user, onChange, onInstantSelect }) {
   const wrapper = document.createElement('div');
   wrapper.className = 'metric-control-wrap';
 
@@ -214,6 +257,87 @@ export function createMetricControl(metric, { onChange, onInstantSelect }) {
         });
         wrapper.appendChild(hacheeBtn);
       }
+    } else if (metric.type === 'free_symptoms') {
+      const form = document.createElement('form');
+      form.className = 'symptom-input-row';
+      form.innerHTML = `
+        <input
+          type="text"
+          class="text-input symptom-text-input"
+          placeholder="Ex: Maux de tête..."
+          autocomplete="off"
+        />
+        <button type="submit" class="symptom-add-btn">Ajouter</button>
+      `;
+
+      const input = form.querySelector('input');
+
+      function addSymptom(text) {
+        const clean = text.trim();
+        if (!clean) return;
+        const already = state.items.some(
+          (i) => i.text.toLowerCase() === clean.toLowerCase()
+        );
+        if (!already) {
+          state.items.push({ text: clean, color: randomSymptomColor() });
+        }
+        pushRecentSymptom(user, clean);
+        render();
+        emit(false);
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addSymptom(input.value);
+      });
+
+      wrapper.appendChild(form);
+
+      // Bulles colorées des symptômes ajoutés
+      if (state.items.length > 0) {
+        const selectedWrap = document.createElement('div');
+        selectedWrap.className = 'symptom-bubbles';
+        state.items.forEach((item, idx) => {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'symptom-bubble';
+          chip.style.background = item.color.bg;
+          chip.style.borderColor = item.color.border;
+          chip.style.color = item.color.text;
+          chip.innerHTML = `<span>${item.text}</span><span class="bubble-x">×</span>`;
+          chip.addEventListener('click', () => {
+            state.items.splice(idx, 1);
+            render();
+            emit(false);
+          });
+          selectedWrap.appendChild(chip);
+        });
+        wrapper.appendChild(selectedWrap);
+      }
+
+      // 8 derniers symptômes en bulles grises
+      const selectedLower = new Set(state.items.map((i) => i.text.toLowerCase()));
+      const recent = loadRecentSymptoms(user).filter(
+        (label) => !selectedLower.has(label.toLowerCase())
+      );
+
+      if (recent.length > 0) {
+        const recentSection = document.createElement('div');
+        recentSection.className = 'recent-symptoms-section';
+        recentSection.innerHTML = `<div class="group-label">Récents</div>`;
+        const recentWrap = document.createElement('div');
+        recentWrap.className = 'symptom-bubbles';
+        recent.forEach((label) => {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'symptom-bubble symptom-bubble-grey';
+          chip.textContent = label;
+          chip.addEventListener('click', () => addSymptom(label));
+          recentWrap.appendChild(chip);
+        });
+        recentSection.appendChild(recentWrap);
+        wrapper.appendChild(recentSection);
+      }
     }
   }
 
@@ -260,6 +384,8 @@ function getInitialState(metric) {
       return { intensity: null, duration: null };
     case 'hours':
       return { hours: metric.defaultHours || 7.5, hachee: false };
+    case 'free_symptoms':
+      return { items: [] };
     default:
       return {};
   }
@@ -297,6 +423,11 @@ function evaluateState(metric, state) {
         value: metric.hasHachee
           ? { hours: state.hours, hachee: Boolean(state.hachee) }
           : state.hours,
+      };
+    case 'free_symptoms':
+      return {
+        valid: state.items.length > 0,
+        value: state.items.map((i) => i.text),
       };
     default:
       return { valid: false, value: null };

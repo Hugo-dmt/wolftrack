@@ -66,6 +66,29 @@ export const METRICS = [
     autoAdvance: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>`,
   },
+  {
+    id: 'autres_symptomes',
+    category: 'symptomes',
+    label: 'Autres symptômes',
+    question: 'Autres symptômes ?',
+    type: 'free_symptoms',
+    hasNope: false,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+  },
+  {
+    id: 'autres_malades_maison',
+    category: 'symptomes',
+    label: 'Malades maison',
+    question: 'Autres malades dans la maison ?',
+    type: 'single',
+    hasNope: false,
+    autoAdvance: true,
+    options: [
+      { value: true, label: 'Oui' },
+      { value: false, label: 'Non' },
+    ],
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  },
 
   // --- HABITUDES & ACTIVITÉS ---
   {

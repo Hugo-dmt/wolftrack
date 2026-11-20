@@ -227,6 +227,7 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
     let currentValue = null;
 
     const control = createMetricControl(metric, {
+      user,
       onChange: (val, valid) => {
         currentValue = val;
         currentValid = valid;

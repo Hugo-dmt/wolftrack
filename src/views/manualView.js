@@ -122,6 +122,7 @@ export function renderManualView(container, { user, subject, targetDate, onDateC
     }
 
     const control = createMetricControl(metric, {
+      user,
       onChange: (val, valid) => {
         currentVal = val;
         currentValid = valid;

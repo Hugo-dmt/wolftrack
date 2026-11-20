@@ -840,6 +840,68 @@ button:disabled {
   color: var(--accent-text);
 }
 
+/* --- SYMPTÔMES LIBRES --- */
+.symptom-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  width: 100%;
+}
+
+.symptom-text-input {
+  min-height: 50px;
+  padding: 10px 14px;
+}
+
+.symptom-add-btn {
+  min-height: 50px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.symptom-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.symptom-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.bubble-x {
+  opacity: 0.75;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.symptom-bubble-grey {
+  background: #262C36;
+  border-color: #374151;
+  color: #D1D5DB;
+}
+
+.recent-symptoms-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
 /* --- MODE B: SAISIE RAPIDE --- */
 .manual-view {
   padding: 6px 16px 28px;
