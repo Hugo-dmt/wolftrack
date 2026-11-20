@@ -18,13 +18,13 @@ function randomSymptomColor() {
   return SYMPTOM_COLORS[Math.floor(Math.random() * SYMPTOM_COLORS.length)];
 }
 
-function getRecentSymptomsKey(user) {
-  return `wolftrack_recent_symptoms_${user?.uid || 'local'}`;
+function getRecentKey(prefix, user) {
+  return `wolftrack_recent_${prefix}_${user?.uid || 'local'}`;
 }
 
-function loadRecentSymptoms(user) {
+function loadRecentTags(prefix, user) {
   try {
-    const raw = localStorage.getItem(getRecentSymptomsKey(user));
+    const raw = localStorage.getItem(getRecentKey(prefix, user));
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed.slice(0, 8) : [];
   } catch {
@@ -32,15 +32,15 @@ function loadRecentSymptoms(user) {
   }
 }
 
-function pushRecentSymptom(user, label) {
+function pushRecentTag(prefix, user, label) {
   const clean = label.trim();
   if (!clean) return;
-  const existing = loadRecentSymptoms(user).filter(
+  const existing = loadRecentTags(prefix, user).filter(
     (item) => item.toLowerCase() !== clean.toLowerCase()
   );
   const updated = [clean, ...existing].slice(0, 8);
   try {
-    localStorage.setItem(getRecentSymptomsKey(user), JSON.stringify(updated));
+    localStorage.setItem(getRecentKey(prefix, user), JSON.stringify(updated));
   } catch {
     // ignore storage quota errors
   }
@@ -258,85 +258,84 @@ export function createMetricControl(metric, { user, onChange, onInstantSelect })
         wrapper.appendChild(hacheeBtn);
       }
     } else if (metric.type === 'free_symptoms') {
-      const form = document.createElement('form');
-      form.className = 'symptom-input-row';
-      form.innerHTML = `
-        <input
-          type="text"
-          class="text-input symptom-text-input"
-          placeholder="Ex: Maux de tête..."
-          autocomplete="off"
-        />
-        <button type="submit" class="symptom-add-btn">Ajouter</button>
-      `;
+      appendFreeTagControl(wrapper, {
+        user,
+        prefix: 'symptoms',
+        placeholder: 'Ex: Maux de tête...',
+        items: state.items,
+        onMutate: () => {
+          render();
+          emit(false);
+        },
+      });
+    } else if (metric.type === 'sick_household') {
+      const ynRow = document.createElement('div');
+      ynRow.className = 'segmented-row';
 
-      const input = form.querySelector('input');
-
-      function addSymptom(text) {
-        const clean = text.trim();
-        if (!clean) return;
-        const already = state.items.some(
-          (i) => i.text.toLowerCase() === clean.toLowerCase()
-        );
-        if (!already) {
-          state.items.push({ text: clean, color: randomSymptomColor() });
-        }
-        pushRecentSymptom(user, clean);
-        render();
-        emit(false);
-      }
-
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        addSymptom(input.value);
+      [
+        { value: true, label: 'Oui' },
+        { value: false, label: 'Non' },
+      ].forEach((opt) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `seg-btn ${state.present === opt.value ? 'is-selected' : ''}`;
+        btn.textContent = opt.label;
+        btn.addEventListener('click', () => {
+          state.present = opt.value;
+          render();
+          emit(false);
+        });
+        ynRow.appendChild(btn);
       });
 
-      wrapper.appendChild(form);
+      wrapper.appendChild(ynRow);
 
-      // Bulles colorées des symptômes ajoutés
-      if (state.items.length > 0) {
-        const selectedWrap = document.createElement('div');
-        selectedWrap.className = 'symptom-bubbles';
-        state.items.forEach((item, idx) => {
-          const chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'symptom-bubble';
-          chip.style.background = item.color.bg;
-          chip.style.borderColor = item.color.border;
-          chip.style.color = item.color.text;
-          chip.innerHTML = `<span>${item.text}</span><span class="bubble-x">×</span>`;
-          chip.addEventListener('click', () => {
-            state.items.splice(idx, 1);
+      if (state.present === true) {
+        const label = document.createElement('div');
+        label.className = 'group-label';
+        label.textContent = 'Maladie';
+        wrapper.appendChild(label);
+
+        appendFreeTagControl(wrapper, {
+          user,
+          prefix: 'illnesses',
+          placeholder: 'Ex: Grippe, Rhume...',
+          items: state.items,
+          onMutate: () => {
             render();
             emit(false);
-          });
-          selectedWrap.appendChild(chip);
+          },
         });
-        wrapper.appendChild(selectedWrap);
       }
+    } else if (metric.type === 'other_activity') {
+      wrapper.appendChild(buildScaleRow('Intensité', state.intensity, (val) => {
+        state.intensity = val;
+        render();
+        emit(false);
+      }));
 
-      // 8 derniers symptômes en bulles grises
-      const selectedLower = new Set(state.items.map((i) => i.text.toLowerCase()));
-      const recent = loadRecentSymptoms(user).filter(
-        (label) => !selectedLower.has(label.toLowerCase())
-      );
+      wrapper.appendChild(buildScaleRow('Durée', state.duration, (val) => {
+        state.duration = val;
+        render();
+        emit(false);
+      }));
 
-      if (recent.length > 0) {
-        const recentSection = document.createElement('div');
-        recentSection.className = 'recent-symptoms-section';
-        recentSection.innerHTML = `<div class="group-label">Récents</div>`;
-        const recentWrap = document.createElement('div');
-        recentWrap.className = 'symptom-bubbles';
-        recent.forEach((label) => {
-          const chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'symptom-bubble symptom-bubble-grey';
-          chip.textContent = label;
-          chip.addEventListener('click', () => addSymptom(label));
-          recentWrap.appendChild(chip);
+      if (state.intensity !== null) {
+        const label = document.createElement('div');
+        label.className = 'group-label';
+        label.textContent = 'Activité';
+        wrapper.appendChild(label);
+
+        appendFreeTagControl(wrapper, {
+          user,
+          prefix: 'activities',
+          placeholder: 'Ex: Vélo, Natation...',
+          items: state.items,
+          onMutate: () => {
+            render();
+            emit(false);
+          },
         });
-        recentSection.appendChild(recentWrap);
-        wrapper.appendChild(recentSection);
       }
     }
   }
@@ -349,6 +348,83 @@ export function createMetricControl(metric, { user, onChange, onInstantSelect })
     element: wrapper,
     getValue: () => evaluateState(metric, state),
   };
+}
+
+function appendFreeTagControl(container, { user, prefix, placeholder, items, onMutate }) {
+  const form = document.createElement('form');
+  form.className = 'symptom-input-row';
+  form.innerHTML = `
+    <input
+      type="text"
+      class="text-input symptom-text-input"
+      placeholder="${placeholder}"
+      autocomplete="off"
+    />
+    <button type="submit" class="symptom-add-btn">Ajouter</button>
+  `;
+
+  const input = form.querySelector('input');
+
+  function addTag(text) {
+    const clean = text.trim();
+    if (!clean) return;
+    const already = items.some((i) => i.text.toLowerCase() === clean.toLowerCase());
+    if (!already) {
+      items.push({ text: clean, color: randomSymptomColor() });
+    }
+    pushRecentTag(prefix, user, clean);
+    onMutate();
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    addTag(input.value);
+  });
+
+  container.appendChild(form);
+
+  if (items.length > 0) {
+    const selectedWrap = document.createElement('div');
+    selectedWrap.className = 'symptom-bubbles';
+    items.forEach((item, idx) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'symptom-bubble';
+      chip.style.background = item.color.bg;
+      chip.style.borderColor = item.color.border;
+      chip.style.color = item.color.text;
+      chip.innerHTML = `<span>${item.text}</span><span class="bubble-x">×</span>`;
+      chip.addEventListener('click', () => {
+        items.splice(idx, 1);
+        onMutate();
+      });
+      selectedWrap.appendChild(chip);
+    });
+    container.appendChild(selectedWrap);
+  }
+
+  const selectedLower = new Set(items.map((i) => i.text.toLowerCase()));
+  const recent = loadRecentTags(prefix, user).filter(
+    (label) => !selectedLower.has(label.toLowerCase())
+  );
+
+  if (recent.length > 0) {
+    const recentSection = document.createElement('div');
+    recentSection.className = 'recent-symptoms-section';
+    recentSection.innerHTML = `<div class="group-label">Récents</div>`;
+    const recentWrap = document.createElement('div');
+    recentWrap.className = 'symptom-bubbles';
+    recent.forEach((label) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'symptom-bubble symptom-bubble-grey';
+      chip.textContent = label;
+      chip.addEventListener('click', () => addTag(label));
+      recentWrap.appendChild(chip);
+    });
+    recentSection.appendChild(recentWrap);
+    container.appendChild(recentSection);
+  }
 }
 
 function buildScaleRow(label, currentVal, onSelect) {
@@ -382,10 +458,14 @@ function getInitialState(metric) {
       return { type: null, intensity: null, duration: null };
     case 'double_scale':
       return { intensity: null, duration: null };
+    case 'other_activity':
+      return { intensity: null, duration: null, items: [] };
     case 'hours':
       return { hours: metric.defaultHours || 7.5, hachee: false };
     case 'free_symptoms':
       return { items: [] };
+    case 'sick_household':
+      return { present: null, items: [] };
     default:
       return {};
   }
@@ -417,6 +497,19 @@ function evaluateState(metric, state) {
         value: valid ? { intensity: state.intensity, duration: state.duration } : null,
       };
     }
+    case 'other_activity': {
+      const valid = Boolean(state.intensity && state.duration);
+      return {
+        valid,
+        value: valid
+          ? {
+              intensity: state.intensity,
+              duration: state.duration,
+              activites: state.items.map((i) => i.text),
+            }
+          : null,
+      };
+    }
     case 'hours':
       return {
         valid: Boolean(state.hours > 0),
@@ -428,6 +521,13 @@ function evaluateState(metric, state) {
       return {
         valid: state.items.length > 0,
         value: state.items.map((i) => i.text),
+      };
+    case 'sick_household':
+      if (state.present === null) return { valid: false, value: null };
+      if (state.present === false) return { valid: true, value: false };
+      return {
+        valid: true,
+        value: { present: true, maladies: state.items.map((i) => i.text) },
       };
     default:
       return { valid: false, value: null };

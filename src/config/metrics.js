@@ -80,13 +80,8 @@ export const METRICS = [
     category: 'symptomes',
     label: 'Malades maison',
     question: 'Autres malades dans la maison ?',
-    type: 'single',
+    type: 'sick_household',
     hasNope: false,
-    autoAdvance: true,
-    options: [
-      { value: true, label: 'Oui' },
-      { value: false, label: 'Non' },
-    ],
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
   },
 
@@ -142,7 +137,7 @@ export const METRICS = [
     category: 'activites',
     label: 'Autre activité',
     question: 'Autre activité physique ?',
-    type: 'double_scale',
+    type: 'other_activity',
     hasNope: true,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h12"/><path d="M4 9v6"/><path d="M20 9v6"/><path d="M2 10v4"/><path d="M22 10v4"/></svg>`,
   },
