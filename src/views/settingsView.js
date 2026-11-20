@@ -81,6 +81,12 @@ export function renderSettingsView(container, { user, subject, onClose, onLogout
           <p class="settings-hint">
             Télécharge l'historique complet horodaté (<code>wolftrack-export-${getTodayISO()}.json</code>).
           </p>
+          <button type="button" class="btn-secondary btn-xl" id="copy-analysis-btn">
+            Copier pour analyse
+          </button>
+          <p class="settings-hint">
+            Collez le résultat dans votre IA favorite pour une analyse rapide.
+          </p>
         </section>
 
         <section class="settings-card">
@@ -188,6 +194,21 @@ export function renderSettingsView(container, { user, subject, onClose, onLogout
     }
   });
 
+  const copyAnalysisBtn = container.querySelector('#copy-analysis-btn');
+  copyAnalysisBtn.addEventListener('click', async () => {
+    copyAnalysisBtn.disabled = true;
+    try {
+      const payload = await exportAllEntries(user, subject);
+      const promptText = buildAnalysisPrompt(payload);
+      await copyTextToClipboard(promptText);
+      onToast(`Copié pour analyse (${payload.totalEntries} entrées) ✓`, 'success');
+    } catch (err) {
+      onToast(err.message || 'Impossible de copier dans le presse-papier', 'error');
+    } finally {
+      copyAnalysisBtn.disabled = false;
+    }
+  });
+
   const pwaBtn = container.querySelector('#pwa-install-btn');
   const pwaMsg = container.querySelector('#pwa-fallback-msg');
   pwaBtn.addEventListener('click', async () => {
@@ -220,4 +241,54 @@ export function renderSettingsView(container, { user, subject, onClose, onLogout
   }
 
   container.querySelector('#settings-logout-btn').addEventListener('click', onLogout);
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fallback below
+    }
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(textarea);
+  if (!ok) {
+    throw new Error('Copie refusée par le navigateur.');
+  }
+}
+
+function buildAnalysisPrompt(payload) {
+  return `Tu es un biostatisticien et data scientist spécialisé en analyse exploratoire de séries temporelles de santé (suivi quotidien de symptômes et d'habitudes de vie, contexte sclérose en plaques).
+Analyse le jeu de données JSON ci-dessous issu de l'application Wolftrack afin d'identifier des patterns, tendances et corrélations exploitables (sans poser de diagnostic médical).
+
+### 1. Préparation & Nettoyage des données
+- Chaque entrée possède \`targetDate\` (YYYY-MM-DD), \`createdAt\`, \`metric\` et \`value\`.
+- Distingue strictement \`null\` (question passée / donnée manquante) de \`0\` (absence confirmée, ex. pas d'alcool, pas de sport, pas de courbatures).
+- Si plusieurs saisies existent pour un même couple \`(targetDate, metric)\`, conserve la plus récente (\`createdAt\`) pour les états journaliers (\`etat_general\`, \`fatigue\`, etc.) ou agrège de façon cohérente les événements ponctuels.
+
+### 2. Méthodes scientifiques attendues
+1. **Statistiques descriptives** : médiane, écart interquartile (IQR), moyenne/écart-type et taux de complétion par métrique.
+2. **Corrélations non paramétriques (même jour $t$)** : utilise le coefficient de corrélation de rang de **Spearman ($\\rho$)** (et/ou **Kendall $\\tau$**), adapté aux échelles ordinales (1–4, 1–5) et aux distributions non normales. Indique la taille de l'échantillon ($n$), la force de l'effet et la p-value si calculable.
+3. **Effets décalés (Cross-correlation à $t+1$ et $t+2$ jours)** : teste l'impact des facteurs de la veille / avant-veille (sommeil \`sommeil_nuit\`, nuit hachée, alcool, buse, activité physique, charge mentale, travail) sur les symptômes des jours suivants (\`etat_general\`, \`fatigue\`, \`courbatures\`, \`fourmillements\`, \`autres_symptomes\`).
+4. **Comparaisons de groupes** : utilise le test de **Mann–Whitney $U$** (avec taille d'effet $r$ rang-bisériale) pour les variables binaires ou catégorielles (ex. nuit hachée vs non hachée, \`autres_malades_maison\`, télétravail vs présentiel, présence d'activité physique vs repos).
+5. **Rigueur & Biais** : signale les corrélations potentiellement fallacieuses liées au faible $n$ ou aux tests multiples (correction de Benjamini–Hochberg / FDR en esprit), ainsi que les facteurs de confusion possibles.
+
+### 3. Format de réponse souhaité
+- **Synthèse rapide (Top 3 à 5 patterns observés)** en langage clair.
+- **Détail des corrélations & effets décalés ($t \\to t+1 / t+2$)** avec les métriques chiffrées.
+- **Limites des données actuelles** (taille d'échantillon, données manquantes) et **pistes à surveiller** lors des prochains jours.
+
+### Données JSON Wolftrack :
+\`\`\`json
+${JSON.stringify(payload, null, 2)}
+\`\`\``;
 }
