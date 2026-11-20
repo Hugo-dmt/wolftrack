@@ -218,9 +218,10 @@ export async function getSubject(user, subjectId) {
 }
 
 /**
- * Ajoute une entrée horodatée (append-only) dans subjects/{subjectId}/entries
+ * Enregistre ou met à jour l'entrée unique (par personne, par jour et par métrique)
  */
 export async function addEntry(user, { subjectId, targetDate, sourceMode, metric, value }) {
+  const entryId = `${targetDate}_${user.uid}_${metric}`;
   const entryPayload = {
     targetDate,
     authorUid: user.uid,
@@ -234,25 +235,66 @@ export async function addEntry(user, { subjectId, targetDate, sourceMode, metric
     const db = readLocalDb();
     if (!db.entries[subjectId]) db.entries[subjectId] = [];
     const entry = {
-      id: `ent_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: entryId,
       ...entryPayload,
       createdAt: new Date().toISOString(),
     };
-    db.entries[subjectId].push(entry);
+    const idx = db.entries[subjectId].findIndex((e) => e.id === entryId);
+    if (idx >= 0) {
+      db.entries[subjectId][idx] = entry;
+    } else {
+      db.entries[subjectId].push(entry);
+    }
     writeLocalDb(db);
     return entry;
   }
 
   const db = getDb();
-  const docRef = await addDoc(collection(db, 'subjects', subjectId, 'entries'), {
+  const docRef = doc(db, 'subjects', subjectId, 'entries', entryId);
+  await setDoc(docRef, {
     ...entryPayload,
     createdAt: serverTimestamp(),
   });
   return {
-    id: docRef.id,
+    id: entryId,
     ...entryPayload,
     createdAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Récupère les valeurs déjà saisies par l'utilisateur courant pour une date donnée
+ */
+export async function getEntriesForDateByAuthor(user, subjectId, targetDate) {
+  if (!subjectId || !user) return {};
+
+  if (!useFirestore(user)) {
+    const db = readLocalDb();
+    const rawEntries = db.entries[subjectId] || [];
+    const map = {};
+    for (const e of rawEntries) {
+      if (e.targetDate === targetDate && e.authorUid === user.uid) {
+        map[e.metric] = e.value;
+      }
+    }
+    return map;
+  }
+
+  const db = getDb();
+  const q = query(
+    collection(db, 'subjects', subjectId, 'entries'),
+    where('targetDate', '==', targetDate),
+    where('authorUid', '==', user.uid)
+  );
+  const snap = await getDocs(q);
+  const map = {};
+  snap.forEach((d) => {
+    const data = d.data();
+    if (data?.metric) {
+      map[data.metric] = data.value;
+    }
+  });
+  return map;
 }
 
 /**

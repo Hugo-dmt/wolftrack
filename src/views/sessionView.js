@@ -1,13 +1,14 @@
 import { METRICS } from '../config/metrics.js';
 import { createMetricControl } from '../components/metricControls.js';
-import { addEntry, getCompletedDates } from '../services/store.js';
+import { addEntry, getCompletedDates, getEntriesForDateByAuthor } from '../services/store.js';
 import { formatDateLabel, getTodayISO, getYesterdayISO, toLocalISODate } from '../utils/date.js';
 
 export function renderSessionView(container, { user, subject, targetDate, onDateChange, onToast }) {
-  // step: -1 = Écran 0 (Départ), 0..12 = Métriques 1..13, 13 = Écran final
+  // step: -1 = Écran 0 (Départ), 0..14 = Métriques, 15 = Écran final
   let step = -1;
   let isSaving = false;
   let completedDates = new Set();
+  let existingEntries = {};
 
   // Mois affiché dans le calendrier (basé sur targetDate)
   const [initY, initM] = targetDate.split('-').map(Number);
@@ -18,6 +19,13 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
     .then((dates) => {
       completedDates = dates;
       if (step === -1) render();
+    })
+    .catch(() => {});
+
+  getEntriesForDateByAuthor(user, subject.id, targetDate)
+    .then((map) => {
+      existingEntries = map;
+      if (step >= 0 && step < METRICS.length) render();
     })
     .catch(() => {});
 
@@ -32,6 +40,7 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
         metric: metric.id,
         value,
       });
+      existingEntries[metric.id] = value;
       completedDates.add(targetDate);
       step += 1;
       isSaving = false;
@@ -228,6 +237,7 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
 
     const control = createMetricControl(metric, {
       user,
+      initialValue: existingEntries[metric.id],
       onChange: (val, valid) => {
         currentValue = val;
         currentValid = valid;

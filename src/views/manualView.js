@@ -1,11 +1,20 @@
 import { METRICS } from '../config/metrics.js';
 import { createMetricControl } from '../components/metricControls.js';
-import { addEntry } from '../services/store.js';
+import { addEntry, getEntriesForDateByAuthor } from '../services/store.js';
 import { formatDateLabel, getTodayISO, getYesterdayISO } from '../utils/date.js';
 
 export function renderManualView(container, { user, subject, targetDate, onDateChange, onToast }) {
   const savedMetrics = new Set();
+  let existingEntries = {};
   let activeSheetMetric = null;
+
+  getEntriesForDateByAuthor(user, subject.id, targetDate)
+    .then((map) => {
+      existingEntries = map;
+      Object.keys(map).forEach((m) => savedMetrics.add(m));
+      render();
+    })
+    .catch(() => {});
 
   function render() {
     const today = getTodayISO();
@@ -112,6 +121,7 @@ export function renderManualView(container, { user, subject, targetDate, onDateC
           metric: metric.id,
           value,
         });
+        existingEntries[metric.id] = value;
         savedMetrics.add(metric.id);
         closeSheet();
         render();
@@ -123,6 +133,7 @@ export function renderManualView(container, { user, subject, targetDate, onDateC
 
     const control = createMetricControl(metric, {
       user,
+      initialValue: existingEntries[metric.id],
       onChange: (val, valid) => {
         currentVal = val;
         currentValid = valid;

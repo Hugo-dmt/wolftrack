@@ -46,12 +46,12 @@ function pushRecentTag(prefix, user, label) {
   }
 }
 
-export function createMetricControl(metric, { user, onChange, onInstantSelect }) {
+export function createMetricControl(metric, { user, initialValue, onChange, onInstantSelect }) {
   const wrapper = document.createElement('div');
   wrapper.className = 'metric-control-wrap';
 
   // État interne du contrôle
-  let state = getInitialState(metric);
+  let state = getInitialState(metric, initialValue);
 
   function emit(isInstant = false) {
     const { valid, value } = evaluateState(metric, state);
@@ -447,24 +447,73 @@ function buildScaleRow(label, currentVal, onSelect) {
   return group;
 }
 
-function getInitialState(metric) {
+function getInitialState(metric, initialValue) {
   switch (metric.type) {
     case 'multi_fourmillements':
+      if (Array.isArray(initialValue)) {
+        return { selected: initialValue.length === 0 ? ['aucun'] : [...initialValue] };
+      }
       return { selected: [] };
     case 'scale':
+      return {
+        value: typeof initialValue === 'number' && initialValue > 0 ? initialValue : null,
+      };
     case 'single':
-      return { value: null };
+      return { value: initialValue !== undefined && initialValue !== null ? initialValue : null };
     case 'foot':
+      if (initialValue && typeof initialValue === 'object') {
+        return {
+          type: initialValue.type || null,
+          intensity: initialValue.intensity || null,
+          duration: initialValue.duration || null,
+        };
+      }
       return { type: null, intensity: null, duration: null };
     case 'double_scale':
+      if (initialValue && typeof initialValue === 'object') {
+        return {
+          intensity: initialValue.intensity || null,
+          duration: initialValue.duration || null,
+        };
+      }
       return { intensity: null, duration: null };
     case 'other_activity':
+      if (initialValue && typeof initialValue === 'object') {
+        return {
+          intensity: initialValue.intensity || null,
+          duration: initialValue.duration || null,
+          items: Array.isArray(initialValue.activites)
+            ? initialValue.activites.map((t) => ({ text: t, color: randomSymptomColor() }))
+            : [],
+        };
+      }
       return { intensity: null, duration: null, items: [] };
     case 'hours':
+      if (initialValue && typeof initialValue === 'object' && initialValue.hours > 0) {
+        return { hours: initialValue.hours, hachee: Boolean(initialValue.hachee) };
+      }
+      if (typeof initialValue === 'number' && initialValue > 0) {
+        return { hours: initialValue, hachee: false };
+      }
       return { hours: metric.defaultHours || 7.5, hachee: false };
     case 'free_symptoms':
-      return { items: [] };
+      return {
+        items: Array.isArray(initialValue)
+          ? initialValue.map((t) => ({ text: t, color: randomSymptomColor() }))
+          : [],
+      };
     case 'sick_household':
+      if (initialValue === false) {
+        return { present: false, items: [] };
+      }
+      if (initialValue && typeof initialValue === 'object') {
+        return {
+          present: Boolean(initialValue.present),
+          items: Array.isArray(initialValue.maladies)
+            ? initialValue.maladies.map((t) => ({ text: t, color: randomSymptomColor() }))
+            : [],
+        };
+      }
       return { present: null, items: [] };
     default:
       return {};
