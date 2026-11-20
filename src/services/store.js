@@ -315,3 +315,25 @@ export async function exportAllEntries(user, subject) {
     entries,
   };
 }
+
+/**
+ * Retourne l'ensemble des dates (YYYY-MM-DD) ayant au moins une entrée enregistrée
+ */
+export async function getCompletedDates(user, subjectId) {
+  if (!subjectId) return new Set();
+
+  if (!useFirestore(user)) {
+    const db = readLocalDb();
+    const rawEntries = db.entries[subjectId] || [];
+    return new Set(rawEntries.map((e) => e.targetDate).filter(Boolean));
+  }
+
+  const db = getDb();
+  const snap = await getDocs(collection(db, 'subjects', subjectId, 'entries'));
+  const dates = new Set();
+  snap.forEach((d) => {
+    const td = d.data()?.targetDate;
+    if (td) dates.add(td);
+  });
+  return dates;
+}

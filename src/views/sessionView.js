@@ -1,12 +1,25 @@
 import { METRICS } from '../config/metrics.js';
 import { createMetricControl } from '../components/metricControls.js';
-import { addEntry } from '../services/store.js';
-import { formatDateLabel, getTodayISO, getYesterdayISO } from '../utils/date.js';
+import { addEntry, getCompletedDates } from '../services/store.js';
+import { formatDateLabel, getTodayISO, getYesterdayISO, toLocalISODate } from '../utils/date.js';
 
 export function renderSessionView(container, { user, subject, targetDate, onDateChange, onToast }) {
-  // step: -1 = Écran 0 (Départ), 0..10 = Métriques 1..11, 11 = Écran final
+  // step: -1 = Écran 0 (Départ), 0..12 = Métriques 1..13, 13 = Écran final
   let step = -1;
   let isSaving = false;
+  let completedDates = new Set();
+
+  // Mois affiché dans le calendrier (basé sur targetDate)
+  const [initY, initM] = targetDate.split('-').map(Number);
+  let calYear = initY;
+  let calMonth = initM - 1; // 0-indexed
+
+  getCompletedDates(user, subject.id)
+    .then((dates) => {
+      completedDates = dates;
+      if (step === -1) render();
+    })
+    .catch(() => {});
 
   async function saveAndAdvance(metric, value) {
     if (isSaving) return;
@@ -19,6 +32,7 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
         metric: metric.id,
         value,
       });
+      completedDates.add(targetDate);
       step += 1;
       isSaving = false;
       render();
@@ -26,6 +40,59 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       isSaving = false;
       onToast(err.message || 'Erreur de sauvegarde', 'error');
     }
+  }
+
+  function buildCalendarHtml() {
+    const today = getTodayISO();
+    const firstDay = new Date(calYear, calMonth, 1);
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    // Lundi = 0 .. Dimanche = 6
+    const startOffset = (firstDay.getDay() + 6) % 7;
+
+    const monthLabel = firstDay.toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric',
+    });
+
+    let cells = '';
+    for (let i = 0; i < startOffset; i++) {
+      cells += `<span class="cal-cell cal-empty"></span>`;
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const iso = toLocalISODate(new Date(calYear, calMonth, day));
+      const isFuture = iso > today;
+      const isSelected = iso === targetDate;
+      const isDone = completedDates.has(iso);
+
+      cells += `
+        <button
+          type="button"
+          class="cal-cell cal-day ${isSelected ? 'is-selected' : ''} ${isDone ? 'is-done' : ''}"
+          data-date="${iso}"
+          ${isFuture ? 'disabled' : ''}
+        >
+          <span>${day}</span>
+          ${isDone ? '<span class="cal-dot" aria-hidden="true"></span>' : ''}
+        </button>
+      `;
+    }
+
+    return `
+      <div class="home-calendar">
+        <div class="cal-header">
+          <button type="button" class="cal-nav-btn" id="cal-prev" aria-label="Mois précédent">‹</button>
+          <span class="cal-month-label">${monthLabel}</span>
+          <button type="button" class="cal-nav-btn" id="cal-next" aria-label="Mois suivant">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        </div>
+        <div class="cal-grid">
+          ${cells}
+        </div>
+      </div>
+    `;
   }
 
   function render() {
@@ -40,8 +107,6 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
       el.className = 'session-stage';
       el.innerHTML = `
         <div class="session-start-card">
-          <div class="session-badge">Session Express · ${METRICS.length} questions</div>
-          <h2 class="session-start-title">Date de la session</h2>
           <div class="date-quick-row">
             <button type="button" class="seg-btn ${targetDate === today ? 'is-selected' : ''}" id="sess-today">
               Aujourd'hui
@@ -49,11 +114,8 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
             <button type="button" class="seg-btn ${targetDate === yesterday ? 'is-selected' : ''}" id="sess-yesterday">
               Hier
             </button>
-            <label class="seg-btn date-custom-btn ${targetDate !== today && targetDate !== yesterday ? 'is-selected' : ''}">
-              <span>${targetDate !== today && targetDate !== yesterday ? formatDateLabel(targetDate) : 'Autre'}</span>
-              <input type="date" id="sess-custom-date" class="hidden-date-input" value="${targetDate}" max="${today}" />
-            </label>
           </div>
+          ${buildCalendarHtml()}
         </div>
         <div class="session-bottom-cta">
           <button type="button" class="btn-primary btn-xl" id="start-session-btn">
@@ -64,9 +126,31 @@ export function renderSessionView(container, { user, subject, targetDate, onDate
 
       el.querySelector('#sess-today').addEventListener('click', () => onDateChange(today));
       el.querySelector('#sess-yesterday').addEventListener('click', () => onDateChange(yesterday));
-      el.querySelector('#sess-custom-date').addEventListener('change', (e) => {
-        if (e.target.value) onDateChange(e.target.value);
+
+      el.querySelector('#cal-prev').addEventListener('click', () => {
+        calMonth -= 1;
+        if (calMonth < 0) {
+          calMonth = 11;
+          calYear -= 1;
+        }
+        render();
       });
+
+      el.querySelector('#cal-next').addEventListener('click', () => {
+        calMonth += 1;
+        if (calMonth > 11) {
+          calMonth = 0;
+          calYear += 1;
+        }
+        render();
+      });
+
+      el.querySelectorAll('.cal-day[data-date]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          onDateChange(btn.dataset.date);
+        });
+      });
+
       el.querySelector('#start-session-btn').addEventListener('click', () => {
         step = 0;
         render();
