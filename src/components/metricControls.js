@@ -195,6 +195,24 @@ export function createMetricControl(metric, { onChange, onInstantSelect }) {
         pills.appendChild(p);
       });
       wrapper.appendChild(pills);
+
+      if (metric.hasHachee) {
+        const hacheeBtn = document.createElement('button');
+        hacheeBtn.type = 'button';
+        hacheeBtn.role = 'checkbox';
+        hacheeBtn.setAttribute('aria-checked', String(state.hachee));
+        hacheeBtn.className = `choice-btn hachee-toggle ${state.hachee ? 'is-selected' : ''}`;
+        hacheeBtn.innerHTML = `
+          <span>Hachée</span>
+          <span class="checkbox-box">${state.hachee ? '✓' : ''}</span>
+        `;
+        hacheeBtn.addEventListener('click', () => {
+          state.hachee = !state.hachee;
+          render();
+          emit(false);
+        });
+        wrapper.appendChild(hacheeBtn);
+      }
     }
   }
 
@@ -240,7 +258,7 @@ function getInitialState(metric) {
     case 'double_scale':
       return { intensity: null, duration: null };
     case 'hours':
-      return { hours: metric.defaultHours || 7.5 };
+      return { hours: metric.defaultHours || 7.5, hachee: false };
     default:
       return {};
   }
@@ -275,7 +293,9 @@ function evaluateState(metric, state) {
     case 'hours':
       return {
         valid: Boolean(state.hours > 0),
-        value: state.hours,
+        value: metric.hasHachee
+          ? { hours: state.hours, hachee: Boolean(state.hachee) }
+          : state.hours,
       };
     default:
       return { valid: false, value: null };
